@@ -32,7 +32,8 @@ from src.preprocessing.word2Vec import Word2VecModel
 
 # Constants
 SEED = 42
-DEFAULT_DATASET_DS_PATH = "data/dataset.csv"
+CURRENT_FILE_FOLDER = os.path.split(os.path.realpath(__file__))[0]
+DEFAULT_DATASET_DS_PATH = os.path.join(CURRENT_FILE_FOLDER, os.path.join("../..","data/dataset.csv"))
 
 np.random.seed(SEED)
 
@@ -43,22 +44,21 @@ class SimilarityDataset(Dataset):
         Wrapper of the productDataset.
     """
 
-    def __init__(self, dataset_path = None, train_mode = True):
+    def __init__(self, dataset_path = None):
 
-        if (dataset_path is None):
-            self._dataset = pd.read_csv(os.path.join("../..", DEFAULT_TRAIN_DS_PATH))  if train_mode else pd.read_csv(os.path.join("../..", DEFAULT_TEST_DS_PATH))
-            """ Pandas dataframe variable acting as the dataset """
-        else:
-            self._dataset = pd.read_csv(dataset_path)
+        self._dataset = pd.read_csv(DEFAULT_DATASET_DS_PATH) if dataset_path is None else pd.read_csv(dataset_path)
+        """ Pandas dataframe variable acting as the dataset """            
 
         self.word2Vec = Word2VecModel(detect_bigrams = True)
         """ Variable holding the Word2Vec model to perform preprocessing """
 
-        self._y = self._dataset["same_security"].apply(lambda cell: 1 if cell == "TRUE" else 0)  
+        self._y = self._dataset["is_duplicate"].apply(lambda cell: 1 if str(cell) == "1" else 0)  
         """ Variable holding the class of the tuple. If products are similar, then the class is 1. It is 0 otherwise """
 
         self._x = self.word2Vec.fit_transform(
-            self._dataset["question1"].to_numpy() + self._dataset["question2"].to_numpy()
+            np.concatenate(
+                (self._dataset["question1"].to_numpy(), self._dataset["question2"].to_numpy())
+            )
         )
         self._x = list(
             zip(self._x[:len(self._y)], self._x[len(self._y):])

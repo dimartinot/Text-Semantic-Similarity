@@ -35,8 +35,8 @@ module_path = os.path.abspath(os.path.join('../..'))
 if module_path not in sys.path:
     sys.path.append(module_path)
 
-from product_linker.scripts.utils import _debug
-from product_linker.scripts.exceptions.modelException import UntrainedModelException
+from src.utils.utils import _debug
+from src.exceptions.modelException import UntrainedModelException
 
 class Word2VecModel():
 
@@ -69,6 +69,7 @@ class Word2VecModel():
         if (self._stop_words == None):
             self._stop_words = set(stopwords.words(self._lang))
 
+        print(doc)
         return [
             wordFiltered for wordFiltered in word_tokenize(doc) if wordFiltered not in self._stop_words
         ]
