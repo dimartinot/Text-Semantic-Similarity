@@ -59,8 +59,8 @@ class Word2VecModel():
         """ Parameterizes if diagrams are detected or not """
         self._epochs = epochs
         """ Number of epochs to train the model """
-
         self._fitted = False
+        """ variable that checks if the model has been fitted to raise an error if transform is called without training """
 
     def _cleaning(self, doc):
         """
@@ -69,7 +69,6 @@ class Word2VecModel():
         if (self._stop_words == None):
             self._stop_words = set(stopwords.words(self._lang))
 
-        print(doc)
         return [
             wordFiltered for wordFiltered in word_tokenize(doc) if wordFiltered not in self._stop_words
         ]
@@ -81,7 +80,7 @@ class Word2VecModel():
         _debug(self._is_debug, "Step 1: Tokenizing and filtering titles...")
 
         return [
-            self._cleaning(text) for text in X
+            self._cleaning(text) for text in tqdm(X)
         ]
 
     def fit(self, X):
@@ -180,7 +179,7 @@ class BigramModel():
         Fits the bigram model to the input list of sentences. 
         Input has to be a list of sentences where each sentences is a list of string (each string being a word).
         """
-        phrases = Phrases(tokenized_and_filtered, min_count=self._min_count, threshold=self._min_count)
+        phrases = Phrases(X, min_count=self._min_count, threshold=self._min_count)
         self._bigram_model = Phraser(phrases)
         self._fitted = True
         return self

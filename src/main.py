@@ -177,20 +177,20 @@ if __name__ == "__main__":
     dataloader_train = torch.utils.data.dataloader.DataLoader(
         dataset = dataset,
         batch_size = BATCH_SIZE,
-        collate_fn = collate_fn,
+        collate_fn = padding_collate,
         sampler = train_sampler
     )
 
     dataloader_val = torch.utils.data.dataloader.DataLoader(
         dataset = dataset,
         batch_size = BATCH_SIZE,
-        collate_fn = collate_fn,
+        collate_fn = padding_collate,
         sampler = val_sampler
     )
 
     dataloader_test = torch.utils.data.dataloader.DataLoader(
         dataset = dataset,
-        collate_fn = collate_fn,
+        collate_fn = padding_collate,
         sampler = test_sampler
     )
     
@@ -302,19 +302,19 @@ if __name__ == "__main__":
 
     dataloader_train = torch.utils.data.dataloader.DataLoader(
         dataset = dataset,
-        collate_fn = collate_fn,
+        collate_fn = padding_collate,
         sampler = train_sampler
     )
 
     dataloader_val = torch.utils.data.dataloader.DataLoader(
         dataset = dataset,
-        collate_fn = collate_fn,
+        collate_fn = padding_collate,
         sampler = val_sampler
     )
 
     dataloader_test = torch.utils.data.dataloader.DataLoader(
         dataset = dataset,
-        collate_fn = collate_fn,
+        collate_fn = padding_collate,
         sampler = test_sampler
     )
 

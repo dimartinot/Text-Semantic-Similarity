@@ -33,7 +33,7 @@ from src.preprocessing.word2Vec import Word2VecModel
 # Constants
 SEED = 42
 CURRENT_FILE_FOLDER = os.path.split(os.path.realpath(__file__))[0]
-DEFAULT_DATASET_DS_PATH = os.path.join(CURRENT_FILE_FOLDER, os.path.join("../..","data/dataset.csv"))
+DEFAULT_DATASET_DS_PATH = os.path.join(CURRENT_FILE_FOLDER, os.path.join("../..","data/cleaned_dataset.csv"))
 
 np.random.seed(SEED)
 
@@ -49,7 +49,7 @@ class SimilarityDataset(Dataset):
         self._dataset = pd.read_csv(DEFAULT_DATASET_DS_PATH) if dataset_path is None else pd.read_csv(dataset_path)
         """ Pandas dataframe variable acting as the dataset """            
 
-        self.word2Vec = Word2VecModel(detect_bigrams = True)
+        self.word2Vec = Word2VecModel(detect_bigrams = True, debug=True)
         """ Variable holding the Word2Vec model to perform preprocessing """
 
         self._y = self._dataset["is_duplicate"].apply(lambda cell: 1 if str(cell) == "1" else 0)  
