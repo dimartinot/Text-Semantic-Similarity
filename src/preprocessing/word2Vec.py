@@ -24,11 +24,14 @@ if module_path not in sys.path:
 
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.corpus import stopwords
+from nltk.stem.porter import PorterStemmer
 from tqdm import tqdm
+import numpy as np
 
 from gensim.models import Word2Vec
 from gensim.models.phrases import Phrases, Phraser
 import multiprocessing
+import string
 
 # Adding product_linker to path to have absolute import enabled: crucial to have coherent file architecture when executing jupyter notebooks
 module_path = os.path.abspath(os.path.join('../..'))
@@ -40,7 +43,7 @@ from src.exceptions.modelException import UntrainedModelException
 
 class Word2VecModel():
 
-    def __init__(self, vector_size=50, min_count=20, workers=multiprocessing.cpu_count()-1, debug=False, lang="english", detect_bigrams=False, epochs = 30):
+    def __init__(self, vector_size=50, min_count=5, workers=multiprocessing.cpu_count()-1, debug=False, lang="english", detect_bigrams=False, epochs = 30):
         self._vector_size = vector_size
         """Parameterizes the size of the word vectors"""
         self._min_count = min_count
@@ -61,16 +64,18 @@ class Word2VecModel():
         """ Number of epochs to train the model """
         self._fitted = False
         """ variable that checks if the model has been fitted to raise an error if transform is called without training """
+        self.punctuation_table = str.maketrans('', '', string.punctuation)
+        """ punctuation table used to remove punctations in sentences """
+        self._stop_words = set(stopwords.words(self._lang))
+        """ loads english stop words """
+        self._stemmer = PorterStemmer()
 
     def _cleaning(self, doc):
         """
             Removes stop word from a list of words
-        """
-        if (self._stop_words == None):
-            self._stop_words = set(stopwords.words(self._lang))
-
+        """            
         return [
-            wordFiltered for wordFiltered in word_tokenize(doc) if wordFiltered not in self._stop_words
+            self._stemmer.stem(wordFiltered.lower()) for wordFiltered in word_tokenize(doc) if wordFiltered not in self._stop_words and wordFiltered.isalpha()
         ]
 
     def _tokenize_and_filter(self, X):
@@ -80,7 +85,7 @@ class Word2VecModel():
         _debug(self._is_debug, "Step 1: Tokenizing and filtering titles...")
 
         return [
-            self._cleaning(text) for text in tqdm(X)
+            self._cleaning(text.translate(self.punctuation_table)) for text in X
         ]
 
     def fit(self, X):
@@ -139,7 +144,7 @@ class Word2VecModel():
 
         res = []
         count_unknown_word = 0
-        for sentence in tqdm(tokenized_and_filtered):
+        for sentence in tokenized_and_filtered:
             encoded_sentence = []
             for word in sentence:
                 vec = None
@@ -151,7 +156,13 @@ class Word2VecModel():
                 if vec is not None:
                     encoded_sentence.append(vec)
 
-            res.append(encoded_sentence)
+            try:
+                encoded_sentence = np.vstack(encoded_sentence)
+                res.append(encoded_sentence)
+            except:
+                pass
+
+            
 
         _debug(self._is_debug, f"Total of {count_unknown_word} unknown_words", msg_type="WARN")
         return res

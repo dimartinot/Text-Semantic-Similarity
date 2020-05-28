@@ -34,37 +34,29 @@ from src.preprocessing.word2Vec import Word2VecModel
 # Constants
 SEED = 42
 CURRENT_FILE_FOLDER = os.path.split(os.path.realpath(__file__))[0]
-DEFAULT_DATASET_DS_PATH = os.path.join(CURRENT_FILE_FOLDER, os.path.join("../..","data/cleaned_dataset.csv"))
+DEFAULT_DATASET_DS_PATH = os.path.join(CURRENT_FILE_FOLDER, os.path.join("../..","data/vectorized_dataset.pkl"))
 
 np.random.seed(SEED)
 
 
-class SimilarityDataset(Dataset):
+class SimilarityVectorizedDataset(Dataset):
     """
         PyTorch compatible dataset of product titles.
         Wrapper of the productDataset.
     """
 
-    def __init__(self, embedding_dim = 50, dataset_path = None):
+    def __init__(self, dataset_path = None):
 
-        self._dataset = pd.read_csv(DEFAULT_DATASET_DS_PATH) if dataset_path is None else pd.read_csv(dataset_path)
+        self._dataset = pd.read_pickle(DEFAULT_DATASET_DS_PATH) if dataset_path is None else pd.read_pickle(dataset_path)
         """ Pandas dataframe variable acting as the dataset """            
 
-        self.word2Vec = Word2VecModel(vector_size = embedding_dim, detect_bigrams = False, debug=True)
-        """ Variable holding the Word2Vec model to perform preprocessing """
-
-        self._y = self._dataset["is_duplicate"].apply(lambda cell: 1 if str(cell) == "1" else 0)  
+        self._y = self._dataset["is_duplicate"].apply(lambda cell: 1 if str(cell) == "1" else 0).to_numpy()  
         """ Variable holding the class of the tuple. If products are similar, then the class is 1. It is 0 otherwise """
 
-        self._x = self.word2Vec.fit_transform(
-            np.concatenate(
-                (self._dataset["question1"].to_numpy(), self._dataset["question2"].to_numpy())
-            )
-        )
-        self._x = list(
-            zip(self._x[:len(self._y)], self._x[len(self._y):])
-        )
-        """ Variable holding the tuple sentences acting as input of the model """
+        self._x1 = self._dataset["question1"].to_numpy()
+        """ Variable 1 holding the tuple sentences acting as input of the model """
+        self._x2 = self._dataset["question2"].to_numpy()
+        """ Variable 2 holding the tuple sentences acting as input of the model """
 
     def __len__(self):
         """
@@ -83,10 +75,10 @@ class SimilarityDataset(Dataset):
             idx = idx.tolist()
 
         # Part 1: Retrieving the tuple of sequences
-        sequence1, sequence2 = self._x[idx]
+        sequence1, sequence2 = self._x1[idx], self._x2[idx]
 
-        sequence1 = torch.FloatTensor(sequence1)
-        sequence2 = torch.FloatTensor(sequence2)
+        sequence1 = torch.FloatTensor(sequence1).squeeze(1)
+        sequence2 = torch.FloatTensor(sequence2).squeeze(1)
 
         # if two sequences are different sizes, perform zero padding of the smallest
         if (sequence1.shape != sequence2.shape):

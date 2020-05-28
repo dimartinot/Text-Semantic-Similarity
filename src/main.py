@@ -14,14 +14,19 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import time
+from datetime import datetime
 
 import torch
 import torch.nn
 import torch.optim as optim
 from torch.utils.data.sampler import SubsetRandomSampler
 
+from sklearn.linear_model import LogisticRegression
+
 # Local imports
 from src.dataset.similarityDataset import SimilarityDataset
+from src.dataset.similarityVectorizedDataset import SimilarityVectorizedDataset
+
 
 
 
@@ -52,9 +57,9 @@ class TextSimilarityLSTM(torch.nn.Module):
 
         # The LSTM takes word embeddings as inputs, and outputs hidden states
         # with dimensionality hidden_dim.
-        self.lstm = nn.LSTM(embedding_dim, hidden_dim, 1,
-                            dropout=0.15 + np.random.rand() * 0.25,
-                            batch_first=True, bidirectional=False)
+        self.lstm = torch.nn.LSTM(embedding_dim, hidden_dim, 1,
+                            dropout=0.15 + np.random.rand() * 0.10,
+                            batch_first=True, bidirectional=True)
 
         
     def forward(self, sentence1, sentence2):
@@ -170,8 +175,8 @@ def model_and_titles_to_distance_dataset(model, dataloader):
     return X, y
 
 
-BATCH_SIZE = 8
-EMBEDDING_DIM = 20
+BATCH_SIZE = 64
+EMBEDDING_DIM = 40
 EPOCHS = 50
 TRAIN = 0.8
 TEST = 0.1
@@ -179,10 +184,16 @@ VAL = 0.1
 SHUFFLE = True
 SEED = 42
 LR = 1e-3
+TO_SAVE = True
+
+torch.manual_seed(SEED)
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+print(f"Device used: {device}")
+
 
 if __name__ == "__main__":
 
-    dataset = SimilarityDataset()
+    dataset = SimilarityVectorizedDataset()
 
     # add dataloaders + splits + training functions
     # add model and loss as well
@@ -267,12 +278,12 @@ if __name__ == "__main__":
         n = 1
         total_loss = 0
         total_duration = 0
+        t0 = time.time()
         total_timesteps = len(dataloader_train)
-        
+       
+
         for local_batch, local_labels in dataloader_train:
             model.zero_grad()
-
-            t0 = time.time()
             
             # Transfer to GPU
             local_batch_X1, local_batch_X2, local_labels = local_batch[0].to(device), local_batch[1].to(device), local_labels.to(device)
@@ -295,6 +306,7 @@ if __name__ == "__main__":
 
             print(f"\r Epochs {i} - Loss: {total_loss/n} - Acc: {0} - Batch: {n}/{num_train_batch} - Dur: {total_duration}s/{estimated_duration_left}s", end="")
             n+=1
+            t0 = time.time()
 
         print("\n")
         
@@ -318,14 +330,14 @@ if __name__ == "__main__":
                 print(f"\r Epochs {i} - Val_loss: {total_loss/n} - Batch: {n}/{num_val_batch}", end="")
                 n+=1
             
-            if to_save:
+            if TO_SAVE:
                 date = datetime.now().strftime("%m_%d_%H_%M_%S")
                 torch.save(model.state_dict(), f"siamese_lstm_sequence_{date}_epoch{i}.pt")
             
             model.train()
         print("\n---")
     
-    if to_save:
+    if TO_SAVE:
         date = datetime.now().strftime("%m_%d_%H_%M_%S")
         torch.save(model.state_dict(), f"siamese_lstm_sequence_{date}_final.pt")
     
@@ -364,13 +376,13 @@ if __name__ == "__main__":
         sampler = test_sampler
     )
 
-    _debug("Generating training dataset...")
+    print("Generating training dataset...")
     X_train, y_train = model_and_titles_to_distance_dataset(model, dataloader_train)
     
-    _debug("Generating validation dataset...")
+    print("Generating validation dataset...")
     X_test, y_test = model_and_titles_to_distance_dataset(model, dataloader_test)
     
-    _debug("Generating test dataset...")
+    print("Generating test dataset...")
     X_val, y_val = model_and_titles_to_distance_dataset(model, dataloader_val)
 
     logreg = LogisticRegression()
