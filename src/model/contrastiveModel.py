@@ -68,7 +68,7 @@ class SiameseContrastiveLoss(torch.nn.Module):
 
 class LstmNet(torch.nn.Module):
 
-    def __init__(self, embedding_dim, hidden_dim1=128, hidden_dim2=64, hidden_dim3=32):
+    def __init__(self, embedding_dim, hidden_dim1=48, hidden_dim2=32, hidden_dim3=16):
         super(LstmNet, self).__init__()
 
         # The LSTM takes word embeddings as inputs, and outputs hidden states
@@ -115,7 +115,7 @@ class TextSimilarityDeepSiameseLSTM(torch.nn.Module):
 
 class DeepLstmNet(torch.nn.Module):
 
-    def __init__(self, embedding_dim, hidden_dim1=64, hidden_dim2=64):
+    def __init__(self, embedding_dim, hidden_dim1=48, hidden_dim2=48):
         super(DeepLstmNet, self).__init__()
 
         # The LSTM takes word embeddings as inputs, and outputs hidden states
