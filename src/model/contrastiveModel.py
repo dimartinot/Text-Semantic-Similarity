@@ -108,7 +108,6 @@ class TextSimilarityDeepSiameseLSTM(torch.nn.Module):
         output2 = self.net(sequence2)
 
         dist = torch.sum(torch.abs(output1 - output2), dim=1, keepdim=True)
-        
 
         return dist
 
