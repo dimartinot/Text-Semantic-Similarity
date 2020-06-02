@@ -26,52 +26,8 @@ from sklearn.linear_model import LogisticRegression
 # Local imports
 from src.dataset.similarityDataset import SimilarityDataset
 from src.dataset.similarityVectorizedDataset import SimilarityVectorizedDataset
+from src.model.contrastiveModel import TextSimilarityDeepSiameseLSTM, SiameseContrastiveLoss
 
-
-
-
-class ContrastiveLoss(torch.nn.Module):
-    """
-    Contrastive loss function.
-    Based on: http://yann.lecun.com/exdb/publis/pdf/hadsell-chopra-lecun-06.pdf
-    """
-
-    def __init__(self, margin=1.0):
-        super(ContrastiveLoss, self).__init__()
-        self.margin = margin
-
-    def forward(self, output1, output2, label):
-
-        euclidean_distance = torch.dist(output1, output2, p=2)
-        loss_contrastive = torch.mean(1/2*(label) * torch.pow(euclidean_distance, 2) +
-                                      1/2*(1-label) * torch.pow(torch.clamp(self.margin - euclidean_distance, min=0.0), 2))
-
-
-        return loss_contrastive
-        
-class TextSimilarityLSTM(torch.nn.Module):
-
-    def __init__(self, embedding_dim, hidden_dim=30, fc1_size = 1024, fc2_size=256, fc3_size = 64):
-        super(TextSimilarityLSTM, self).__init__()
-        self.hidden_dim = hidden_dim
-
-        # The LSTM takes word embeddings as inputs, and outputs hidden states
-        # with dimensionality hidden_dim.
-        self.lstm = torch.nn.LSTM(embedding_dim, hidden_dim, 1,
-                            dropout=0.15 + np.random.rand() * 0.10,
-                            batch_first=True, bidirectional=True)
-
-        
-    def forward(self, sentence1, sentence2):
-
-        output1, (h_n1, c_n1) = self.lstm(sentence1)
-        output2, (h_n2, c_n2)= self.lstm(sentence2)
-        
-
-        x1 = h_n1[-1,:,:]
-        x2 = h_n2[-1,:,:]
-                
-        return x1, x2
     
 def padding_collate(batch):
     """
@@ -146,12 +102,11 @@ def model_and_titles_to_distance_dataset(model, dataloader):
         # Transfer to GPU
         local_batch_X1, local_batch_X2, local_labels = local_batch[0].to(device), local_batch[1].to(device), local_labels.to(device)
 
-        preds1, preds2 = model(local_batch_X1, local_batch_X2)
+        preds = model(local_batch_X1, local_batch_X2)
         
         with torch.no_grad():
-            distances = torch.dist(preds1, preds2, 2)
             # Transfering distances and labels to cpu
-            distances_cpu = distances.cpu().numpy().reshape(-1, 1)
+            distances_cpu = preds.cpu().numpy().reshape(-1, 1)
             labels = torch.flatten(local_labels).cpu().numpy().reshape(-1, 1)
             # Fitting logreg
             X.append(distances_cpu)
@@ -175,9 +130,9 @@ def model_and_titles_to_distance_dataset(model, dataloader):
     return X, y
 
 
-BATCH_SIZE = 64
+BATCH_SIZE = 128
 EMBEDDING_DIM = 40
-EPOCHS = 50
+EPOCHS = 25
 TRAIN = 0.8
 TEST = 0.1
 VAL = 0.1
@@ -263,11 +218,11 @@ if __name__ == "__main__":
     print("#                                       #")
     print("#########################################")
 
-    model = TextSimilarityLSTM(embedding_dim = EMBEDDING_DIM)
+    model = TextSimilarityDeepSiameseLSTM(embedding_dim = EMBEDDING_DIM)
     model.cuda()
     model.train()
     
-    contrastive_loss = ContrastiveLoss()
+    contrastive_loss = SiameseContrastiveLoss()
     optimizer = optim.Adam(model.parameters(), lr=LR)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.1, patience=0, verbose=True)
 
@@ -288,11 +243,11 @@ if __name__ == "__main__":
             # Transfer to GPU
             local_batch_X1, local_batch_X2, local_labels = local_batch[0].to(device), local_batch[1].to(device), local_labels.to(device)
 
-            preds1, preds2 = model(local_batch_X1, local_batch_X2)
+            preds = model(local_batch_X1, local_batch_X2)
 
             # Compute the loss, gradients, and update the parameters by
             #loss = loss_function(preds, local_labels)
-            loss = contrastive_loss(preds1, preds2, local_labels)
+            loss = contrastive_loss(preds, local_labels)
             loss.backward()
             optimizer.step()
 
@@ -320,9 +275,9 @@ if __name__ == "__main__":
                 # Transfer to GPU
                 local_batch_X1, local_batch_X2, local_labels = local_batch[0].to(device), local_batch[1].to(device), local_labels.to(device)
 
-                preds1, preds2 = model(local_batch_X1, local_batch_X2)
+                preds = model(local_batch_X1, local_batch_X2)
 
-                loss = contrastive_loss(preds1, preds2, local_labels)
+                loss = contrastive_loss(preds, local_labels)
 
                 total_loss += loss.item()
 
