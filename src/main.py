@@ -26,7 +26,8 @@ from sklearn.linear_model import LogisticRegression
 # Local imports
 from src.dataset.similarityDataset import SimilarityDataset
 from src.dataset.similarityVectorizedDataset import SimilarityVectorizedDataset
-from src.model.contrastiveModel import TextSimilarityDeepSiameseLSTM, SiameseContrastiveLoss
+from src.model.contrastiveModel import SiameseLSTM 
+from src.model.losses import ContrastiveLoss
 
     
 def padding_collate(batch):
@@ -218,11 +219,11 @@ if __name__ == "__main__":
     print("#                                       #")
     print("#########################################")
 
-    model = TextSimilarityDeepSiameseLSTM(embedding_dim = EMBEDDING_DIM)
+    model = SiameseLSTM(embedding_dim = EMBEDDING_DIM)
     model.cuda()
     model.train()
     
-    contrastive_loss = SiameseContrastiveLoss()
+    contrastive_loss = ContrastiveLoss()
     optimizer = optim.Adam(model.parameters(), lr=LR)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.1, patience=0, verbose=True)
 
@@ -288,7 +289,7 @@ if __name__ == "__main__":
             if TO_SAVE:
                 date = datetime.now().strftime("%m_%d_%H_%M_%S")
                 torch.save(model.state_dict(), f"siamese_lstm_sequence_{date}_epoch{i}.pt")
-            
+            scheduler.step(total_loss)
             model.train()
         print("\n---")
     

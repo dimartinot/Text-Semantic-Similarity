@@ -3,25 +3,6 @@ import torch.nn.functional as F
 
 import numpy as np
 
-class ContrastiveLoss(torch.nn.Module):
-    """
-    Contrastive loss function.
-    Based on: http://yann.lecun.com/exdb/publis/pdf/hadsell-chopra-lecun-06.pdf
-    """
-
-    def __init__(self, margin=1.0):
-        super(ContrastiveLoss, self).__init__()
-        self.margin = margin
-
-    def forward(self, output1, output2, label):
-
-        euclidean_distance = torch.dist(output1, output2, p=2)
-        loss_contrastive = torch.mean(1/2*(label) * torch.pow(euclidean_distance, 2) +
-                                      1/2*(1-label) * torch.pow(torch.clamp(self.margin - euclidean_distance, min=0.0), 2))
-
-
-        return loss_contrastive
-
 class LstmNet(torch.nn.Module):
 
     def __init__(self, embedding_dim, hidden_dim1=48, hidden_dim2=32, hidden_dim3=16):

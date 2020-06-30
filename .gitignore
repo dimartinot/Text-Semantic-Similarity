@@ -125,3 +125,4 @@ dmypy.json
 .pyre/
 
 /data/*.csv
+data/vectorized_dataset.pkl
