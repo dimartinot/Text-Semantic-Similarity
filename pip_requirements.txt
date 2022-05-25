@@ -220,7 +220,7 @@ pydot==1.4.1
 pyflakes==2.1.1
 pyglet==1.5.0
 Pygments==2.5.2
-PyJWT==1.7.1
+PyJWT==2.4.0
 pykwalify==1.7.0
 pylint==2.4.4
 pymongo==3.8.0
