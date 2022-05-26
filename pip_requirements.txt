@@ -327,7 +327,7 @@ traitlets==4.3.3
 twilio==6.26.3
 typeguard==2.7.1
 tzlocal==2.0.0
-ujson==1.35
+ujson==5.2.0
 unicodecsv==0.14.1
 urllib3==1.25.8
 wasabi==0.6.0
